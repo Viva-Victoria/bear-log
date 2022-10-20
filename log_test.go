@@ -1,11 +1,11 @@
-package bear_log
+package log
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"math/rand"
 	"os"
 	"testing"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestBearLogger(t *testing.T) {
@@ -42,19 +42,10 @@ var (
 	zapLog  = newZapLogger()
 	bearLog = newBearLog()
 
-	logRandInt    = rand.Intn(2_000_000) - 1_000_000
+	logRandInt    = randomInt(-1_000_000, 1_000_000)
 	logRandString = randomText()
 )
 
-// BenchmarkBearLogger/instant
-//BenchmarkBearLogger/instant-12          10330618              3741 ns/op
-//              88 B/op          3 allocs/op
-//BenchmarkBearLogger/format
-//BenchmarkBearLogger/format-12            9008181              4225 ns/op
-//             176 B/op          6 allocs/op
-//BenchmarkBearLogger/fields
-//BenchmarkBearLogger/fields-12             223656              4870 ns/op
-//             921 B/op         14 allocs/op
 func BenchmarkBearLogger(b *testing.B) {
 	b.Run("instant", func(b *testing.B) {
 		b.ReportAllocs()
@@ -67,7 +58,7 @@ func BenchmarkBearLogger(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			bearLog.DebugF("test %d %s", rand.Int(), logRandString)
+			bearLog.DebugF("test %d %s", logRandInt, logRandString)
 		}
 	})
 	b.Run("fields", func(b *testing.B) {
@@ -83,15 +74,6 @@ func BenchmarkBearLogger(b *testing.B) {
 	})
 }
 
-// BenchmarkZapLog/instant
-//BenchmarkZapLog/instant-12               9983971              3729 ns/op
-//               0 B/op          0 allocs/op
-//BenchmarkZapLog/format
-//BenchmarkZapLog/format-12                8578303              4268 ns/op
-//             102 B/op          3 allocs/op
-//BenchmarkZapLog/fields
-//BenchmarkZapLog/fields-12                8018008              4593 ns/op
-//             128 B/op          1 allocs/op
 func BenchmarkZapLog(b *testing.B) {
 	b.Run("instant", func(b *testing.B) {
 		b.ReportAllocs()
@@ -105,7 +87,7 @@ func BenchmarkZapLog(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			zapLogF.Debug("test %d %s", rand.Int(), logRandString)
+			zapLogF.Debug("test %d %s", logRandInt, logRandString)
 		}
 	})
 	b.Run("fields", func(b *testing.B) {

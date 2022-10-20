@@ -1,13 +1,13 @@
-package bear_log
+package log
 
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"math/rand"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type errorMarshaling struct{}
@@ -17,63 +17,63 @@ func (e errorMarshaling) MarshalJSON() ([]byte, error) {
 }
 
 func TestLogField_Key(t *testing.T) {
-	field := LogField{
+	field := FieldImpl{
 		key: randomText(),
 	}
 	assert.Equal(t, field.key, field.Key())
 }
 
 func TestLogField_Type(t *testing.T) {
-	field := LogField{
-		valueType: FieldType(rand.Intn(256)),
+	field := FieldImpl{
+		valueType: FieldType(randomInt(128, 256)),
 	}
 	assert.Equal(t, field.valueType, field.Type())
 }
 
 func TestLogField_StringValue(t *testing.T) {
-	field := LogField{
+	field := FieldImpl{
 		str: randomText(),
 	}
 	assert.Equal(t, field.str, field.StringValue())
 }
 
 func TestLogField_Int(t *testing.T) {
-	field := LogField{
-		i64: rand.Int63(),
+	field := FieldImpl{
+		i64: int64(randomInt(-1_000_000, 1_000_000)),
 	}
 	assert.Equal(t, field.i64, field.Int())
 }
 
 func TestLogField_Uint(t *testing.T) {
-	field := LogField{
-		ui64: rand.Uint64(),
+	field := FieldImpl{
+		ui64: uint64(randomUInt()),
 	}
 	assert.Equal(t, field.ui64, field.UInt())
 }
 
 func TestLogField_Float(t *testing.T) {
-	field := LogField{
-		f64: rand.Float64(),
+	field := FieldImpl{
+		f64: randomFloat(),
 	}
 	assert.Equal(t, field.f64, field.Float())
 }
 
 func TestLogField_Addressable(t *testing.T) {
-	field := LogField{
-		addr: make([]string, rand.Intn(12)),
+	field := FieldImpl{
+		addr: make([]string, randomInt(11, 12)),
 	}
 	assert.Equal(t, field.addr, field.Addressable())
 }
 
 func TestLogField_Errors(t *testing.T) {
-	field := LogField{
+	field := FieldImpl{
 		valueType: TypeBinary,
 		addr:      make([]int, 10),
 	}
 	_, err := field.String()
 	assert.Error(t, err)
 
-	field = LogField{
+	field = FieldImpl{
 		valueType: TypeArray,
 		addr:      errorMarshaling{},
 	}
@@ -82,10 +82,10 @@ func TestLogField_Errors(t *testing.T) {
 }
 
 func TestLogField_String(t *testing.T) {
-	intNeg := rand.Int() * -1
-	intPos := rand.Int()
-	uint64 := rand.Uint64()
-	float := rand.Float64()
+	intNeg := randomInt(-100_000, -1)
+	intPos := randomInt(1, 100_000)
+	uint64 := uint64(randomUInt())
+	float := randomFloat()
 	str := randomText()
 	keys := []string{randomText(), randomText(), randomText()}
 
@@ -128,12 +128,16 @@ func TestLogField_String(t *testing.T) {
 
 func TestLogField_Value(t *testing.T) {
 	fields := []Field{
-		Int(randomText(), rand.Int()),
-		Uint(randomText(), rand.Uint64()),
-		Float(randomText(), rand.Float64()),
+		Int(randomText(), randomInt(-100_000, 100_000)),
+		Uint(randomText(), randomUInt()),
+		Float(randomText(), randomFloat()),
 		Binary(randomText(), []byte(randomText())),
 		String(randomText(), randomText()),
-		Array(randomText(), []int{rand.Int(), rand.Int(), rand.Int()}),
+		Array(randomText(), []int{
+			randomInt(-1000, 1000),
+			randomInt(-1000, 1000),
+			randomInt(-1000, 1000),
+		}),
 	}
 	values := []any{
 		int64(0),
@@ -159,7 +163,7 @@ func TestInt(t *testing.T) {
 	for i := range names {
 		t.Run(names[i], func(t *testing.T) {
 			key := randomText()
-			value := rand.Int() * multi[i]
+			value := randomInt(0, 100_000) * multi[i]
 
 			field := Int(key, value)
 			assert.Equal(t, TypeInt, field.Type())
@@ -171,7 +175,7 @@ func TestInt(t *testing.T) {
 
 func TestUint(t *testing.T) {
 	key := randomText()
-	value := rand.Uint32()
+	value := randomUInt()
 
 	field := Uint(key, value)
 	assert.Equal(t, TypeUInt, field.Type())
@@ -181,12 +185,12 @@ func TestUint(t *testing.T) {
 
 func TestFloat(t *testing.T) {
 	key := randomText()
-	value := rand.Float32()
+	value := randomFloat()
 
 	field := Float(key, value)
 	assert.Equal(t, TypeFloat, field.Type())
 	assert.Equal(t, key, field.Key())
-	assert.Equal(t, float64(value), field.Float())
+	assert.Equal(t, value, field.Float())
 }
 
 func TestString(t *testing.T) {
@@ -218,7 +222,11 @@ func TestBinary(t *testing.T) {
 func TestArray(t *testing.T) {
 	t.Run("int", func(t *testing.T) {
 		key := randomText()
-		value := []int{rand.Int(), rand.Int(), rand.Int()}
+		value := []int{
+			randomInt(-1000, 1000),
+			randomInt(-1000, 1000),
+			randomInt(-1000, 1000),
+		}
 		assertArray(t, key, value, Array(key, value))
 	})
 	t.Run("string", func(t *testing.T) {
@@ -228,7 +236,13 @@ func TestArray(t *testing.T) {
 	})
 	t.Run("any", func(t *testing.T) {
 		key := randomText()
-		value := []any{rand.Int(), rand.Uint32(), rand.Float64(), randomText(), nil}
+		value := []any{
+			randomInt(-1000, 1000),
+			randomUInt(),
+			randomFloat(),
+			randomText(),
+			nil,
+		}
 		assertArray(t, key, value, Array(key, value))
 	})
 }
@@ -237,9 +251,9 @@ func TestMap(t *testing.T) {
 	t.Run("string:int", func(t *testing.T) {
 		key := randomText()
 		value := map[string]int{
-			randomText(): rand.Int(),
-			randomText(): rand.Int(),
-			randomText(): rand.Int(),
+			randomText(): randomInt(-1000, 1000),
+			randomText(): randomInt(-1000, 1000),
+			randomText(): randomInt(-1000, 1000),
 		}
 
 		assertMap(t, key, value, Map(key, value))
@@ -247,9 +261,9 @@ func TestMap(t *testing.T) {
 	t.Run("int:string", func(t *testing.T) {
 		key := randomText()
 		value := map[int]string{
-			rand.Int(): randomText(),
-			rand.Int(): randomText(),
-			rand.Int(): randomText(),
+			randomInt(-1000, 1000): randomText(),
+			randomInt(-1000, 1000): randomText(),
+			randomInt(-1000, 1000): randomText(),
 		}
 
 		assertMap(t, key, value, Map(key, value))

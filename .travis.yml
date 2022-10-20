@@ -1,0 +1,21 @@
+language: go
+go_import_path: github.com/Viva-Victoria/bear-jwt
+
+env:
+  global:
+    - GO111MODULE=on
+
+go:
+  - stable
+
+before_install:
+  - go version
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.46.2
+  - go get -t -v ./alg
+
+script:
+  - golangci-lint run
+  - go test -race -coverprofile=coverage.txt -covermode=atomic ./ ./alg
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

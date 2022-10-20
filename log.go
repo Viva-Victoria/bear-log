@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 import (
 	"fmt"
@@ -32,10 +32,10 @@ type Logger interface {
 }
 
 type FieldMapping struct {
+	FormatLevel     LevelFormat
 	TimeKey         string
 	TimeFormat      string
 	LevelKey        string
-	FormatLevel     LevelFormat
 	MessageKey      string
 	CallerKey       string
 	StacktraceKey   string
@@ -47,10 +47,10 @@ type BearLogger struct {
 	mutex   *sync.Mutex
 	output  io.Writer
 	format  FormatFunc
+	now     func() time.Time
 	mapping FieldMapping
 	tags    []string
 	fields  []Field
-	now     func() time.Time
 }
 
 func NewBearLogger(options ...Option) BearLogger {
@@ -168,7 +168,7 @@ func (b BearLogger) writeF(level Level, format string, args ...any) {
 }
 
 func (b BearLogger) entry(level Level) Entry {
-	return LogEntry{
+	return EntryImpl{
 		level:     level,
 		time:      time.Now(),
 		writeFunc: b.write,

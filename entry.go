@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 import (
 	"fmt"
@@ -14,43 +14,43 @@ type Entry interface {
 	Write()
 }
 
-type LogEntry struct {
+type EntryImpl struct {
+	time      time.Time
+	writeFunc WriteFunc
+	message   string
 	tags      []string
 	fields    []Field
-	time      time.Time
-	message   string
 	level     Level
-	writeFunc WriteFunc
 }
 
 func NewEntry(level Level, time time.Time, writeFunc WriteFunc) Entry {
-	return LogEntry{
+	return EntryImpl{
 		writeFunc: writeFunc,
 		time:      time,
 		level:     level,
 	}
 }
 
-func (e LogEntry) Message(m string) Entry {
+func (e EntryImpl) Message(m string) Entry {
 	e.message = m
 	return e
 }
 
-func (e LogEntry) Format(f string, args ...any) Entry {
+func (e EntryImpl) Format(f string, args ...any) Entry {
 	return e.Message(fmt.Sprintf(f, args...))
 }
 
-func (e LogEntry) Tags(tags ...string) Entry {
+func (e EntryImpl) Tags(tags ...string) Entry {
 	e.tags = append(e.tags, tags...)
 	return e
 }
 
-func (e LogEntry) Fields(fields ...Field) Entry {
+func (e EntryImpl) Fields(fields ...Field) Entry {
 	e.fields = append(e.fields, fields...)
 	return e
 }
 
-func (e LogEntry) Write() {
+func (e EntryImpl) Write() {
 	if e.writeFunc == nil {
 		log.Println("writeFunc required!")
 		return

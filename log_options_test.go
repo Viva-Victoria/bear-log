@@ -1,12 +1,12 @@
-package bear_log
+package log
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
-	"math/rand"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOptionFunc_Apply(t *testing.T) {
@@ -61,7 +61,7 @@ func TestWithTags(t *testing.T) {
 func TestWithFields(t *testing.T) {
 	fields := []Field{
 		String(randomText(), randomText()),
-		Int(randomText(), rand.Int()),
+		Int(randomText(), randomInt(-1000, 1000)),
 	}
 
 	opt := WithFields(fields...).Apply(logOptions{})

@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 import (
 	"io"
@@ -20,6 +20,8 @@ type Option interface {
 
 type OptionFunc func(options logOptions) logOptions
 
+// Apply
+// nolint suppress revive
 func (f OptionFunc) Apply(options logOptions) logOptions {
 	return f(options)
 }

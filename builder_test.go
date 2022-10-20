@@ -1,10 +1,10 @@
-package bear_log
+package log
 
 import (
-	"github.com/stretchr/testify/assert"
-	"math/rand"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStringBuilder_Append(t *testing.T) {
@@ -28,7 +28,7 @@ func TestStringBuilder_AppendBytes(t *testing.T) {
 func TestStringBuilder_String(t *testing.T) {
 	builder := NewStringBuilder()
 
-	count := rand.Intn(10)
+	count := randomInt(5, 10)
 	values := make([]string, 0, count)
 	for i := 0; i < count; i++ {
 		values = append(values, randomText())
@@ -41,7 +41,7 @@ func TestStringBuilder_String(t *testing.T) {
 func TestStringBuilder_Bytes(t *testing.T) {
 	builder := NewStringBuilder()
 
-	count := rand.Intn(10)
+	count := randomInt(5, 10)
 	values := make([]string, 0, count)
 	for i := 0; i < count; i++ {
 		values = append(values, randomText())

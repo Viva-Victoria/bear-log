@@ -1,22 +1,25 @@
-package bear_log
+package log
 
 import (
 	"bytes"
+	crypto_rand "crypto/rand"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"log"
-	"math/rand"
+	"math/big"
+	math_rand "math/rand"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type NewEntryTestCase struct {
-	level     Level
-	time      time.Time
 	writeFunc func() (WriteFunc, *bool)
+	time      time.Time
+	level     Level
 }
 
 var (
@@ -50,7 +53,7 @@ func TestNewEntry(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			writeFunc, f := testCase.writeFunc()
 
-			entry, ok := NewEntry(testCase.level, testCase.time, writeFunc).(LogEntry)
+			entry, ok := NewEntry(testCase.level, testCase.time, writeFunc).(EntryImpl)
 			require.True(t, ok)
 
 			assert.Equal(t, testCase.level, entry.level)
@@ -70,7 +73,7 @@ func TestNewEntry(t *testing.T) {
 }
 
 func TestLogEntry_Message(t *testing.T) {
-	var entry LogEntry
+	var entry EntryImpl
 
 	assert.Empty(t, entry.message)
 
@@ -78,64 +81,64 @@ func TestLogEntry_Message(t *testing.T) {
 	newEntry := entry.Message(text)
 	assert.Empty(t, entry.message)
 
-	entry, ok := newEntry.(LogEntry)
+	entry, ok := newEntry.(EntryImpl)
 	require.True(t, ok)
 	assert.Equal(t, text, entry.message)
 }
 
 func TestLogEntry_Format(t *testing.T) {
-	var entry LogEntry
+	var entry EntryImpl
 
 	assert.Empty(t, entry.message)
 
 	var (
 		text   = randomText()
-		number = rand.Int()
+		number = randomInt(-1_000_000, 1_000_000)
 		format = "%s %d"
 	)
 	newEntry := entry.Format(format, text, number)
 	assert.Empty(t, entry.message)
 
-	entry, ok := newEntry.(LogEntry)
+	entry, ok := newEntry.(EntryImpl)
 	require.True(t, ok)
 	assert.Equal(t, fmt.Sprintf(format, text, number), entry.message)
 }
 
 func TestLogEntry_Tags(t *testing.T) {
-	var entry LogEntry
+	var entry EntryImpl
 	assert.Empty(t, entry.tags)
 
 	tags := randomTags()
 	newEntry := entry.Tags(tags...)
 	assert.Empty(t, entry.tags)
 
-	entry, ok := newEntry.(LogEntry)
+	entry, ok := newEntry.(EntryImpl)
 	require.True(t, ok)
 
 	assert.Equal(t, tags, entry.tags)
 
 	tags2 := randomTags()
-	entry, ok = entry.Tags(tags2...).(LogEntry)
+	entry, ok = entry.Tags(tags2...).(EntryImpl)
 	require.True(t, ok)
 
 	assert.Equal(t, append(tags, tags2...), entry.tags)
 }
 
 func TestLogEntry_Fields(t *testing.T) {
-	var entry LogEntry
+	var entry EntryImpl
 	assert.Empty(t, entry.tags)
 
 	fields := randomFields()
 	newEntry := entry.Fields(fields...)
 	assert.Empty(t, entry.fields)
 
-	entry, ok := newEntry.(LogEntry)
+	entry, ok := newEntry.(EntryImpl)
 	require.True(t, ok)
 
 	assert.Equal(t, fields, entry.fields)
 
 	fields2 := randomFields()
-	entry, ok = entry.Fields(fields2...).(LogEntry)
+	entry, ok = entry.Fields(fields2...).(EntryImpl)
 	require.True(t, ok)
 
 	assert.Equal(t, append(fields, fields2...), entry.fields)
@@ -143,7 +146,7 @@ func TestLogEntry_Fields(t *testing.T) {
 
 func TestLogEntry_Write(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		var entry LogEntry
+		var entry EntryImpl
 
 		var buffer bytes.Buffer
 		log.SetFlags(0)
@@ -157,7 +160,7 @@ func TestLogEntry_Write(t *testing.T) {
 	t.Run("call", func(t *testing.T) {
 		var buffer bytes.Buffer
 
-		entry := LogEntry{
+		entry := EntryImpl{
 			level:   LevelDebug,
 			time:    time.Now(),
 			message: randomText(),
@@ -174,8 +177,21 @@ func TestLogEntry_Write(t *testing.T) {
 
 var randomText = uuid.NewString
 
+func randomInt(min, max int) int {
+	bigInt, _ := crypto_rand.Int(crypto_rand.Reader, big.NewInt(int64(max-min)))
+	return int(bigInt.Int64()) + min
+}
+
+func randomUInt() uint {
+	return uint(randomInt(0, 4294967295))
+}
+
+func randomFloat() float64 {
+	return math_rand.Float64()
+}
+
 func randomTags() []string {
-	count := rand.Intn(5) + 5
+	count := randomInt(5, 10)
 	array := make([]string, 0, count)
 	for i := 0; i < cap(array); i++ {
 		array = append(array, randomText())
@@ -184,13 +200,13 @@ func randomTags() []string {
 }
 
 func randomFields() []Field {
-	count := rand.Intn(5) + 5
+	count := randomInt(5, 10)
 	array := make([]Field, 0, count)
 	for i := 0; i < cap(array); i++ {
-		if rand.Float64() > 0.5 {
+		if randomFloat() > 0.5 {
 			array = append(array, String(randomText(), randomText()))
 		} else {
-			array = append(array, Int(randomText(), rand.Int63()))
+			array = append(array, Int(randomText(), randomInt(0, 10_000_000)))
 		}
 	}
 	return array

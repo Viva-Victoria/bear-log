@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 import (
 	"bytes"
@@ -6,24 +6,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"math/rand"
-	"os"
-	"testing"
-	"time"
 )
 
 type formatJsonEntry struct {
-	Level       Level       `json:"-"`
-	LevelString string      `json:"level"`
 	Time        time.Time   `json:"-"`
+	LevelString string      `json:"level"`
 	TimeString  string      `json:"time"`
 	Message     string      `json:"message"`
 	Tags        []string    `json:"tags,omitempty"`
 	Fields      fieldsArray `json:"fields,omitempty"`
+	Level       Level       `json:"-"`
 }
 
 type fieldsArray []Field
@@ -76,12 +76,12 @@ func (f fieldsArray) MarshalJSON() ([]byte, error) {
 
 type formatJsonTestCase struct {
 	name    string
-	entry   formatJsonEntry
 	mapping FieldMapping
+	entry   formatJsonEntry
 }
 
 type errorField struct {
-	LogField
+	FieldImpl
 }
 
 func (e errorField) String() (string, error) {
@@ -108,10 +108,10 @@ var (
 		generateFormatJsonTestCase(_defaultFieldMapping, nil, nil),
 		generateFormatJsonTestCase(_defaultFieldMapping, []string{randomText(), randomText()}, nil),
 		generateFormatJsonTestCase(_defaultFieldMapping, nil, []Field{
-			Int(randomText(), rand.Int()),
-			Float(randomText(), rand.Float64()),
+			Int(randomText(), randomInt(-1000, 1000)),
+			Float(randomText(), randomFloat()),
 			String(randomText(), randomText()),
-			errorField{LogField{
+			errorField{FieldImpl{
 				key:       randomText(),
 				valueType: TypeString,
 			}},
@@ -119,9 +119,9 @@ var (
 	}
 	_benchmarkTestCase = generateFormatJsonTestCase(_defaultFieldMapping, []string{randomText(), randomText(), randomText()}, []Field{
 		String(randomText(), randomText()),
-		Int(randomText(), rand.Int()),
-		Uint(randomText(), rand.Uint64()),
-		Float(randomText(), rand.Float64()),
+		Int(randomText(), randomInt(-1000, 1000)),
+		Uint(randomText(), randomUInt()),
+		Float(randomText(), randomFloat()),
 	})
 )
 
@@ -145,7 +145,12 @@ func TestFormatJson(t *testing.T) {
 		CallerKey:     "caller",
 		StacktraceKey: "stacktrace",
 		TagsKey:       "tags",
-	}, []string{randomText(), randomText()}, []Field{String(randomText(), randomText()), Int(randomText(), rand.Int())})
+	}, []string{
+		randomText(), randomText(),
+	}, []Field{
+		String(randomText(), randomText()),
+		Int(randomText(), randomInt(-1000, 1000)),
+	})
 	result := map[string]any{
 		testCase.mapping.LevelKey:   testCase.entry.Level.String(),
 		testCase.mapping.TimeKey:    testCase.entry.Time.Format(testCase.mapping.TimeFormat),

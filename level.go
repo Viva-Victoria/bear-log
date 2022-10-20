@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 type Level uint8
 

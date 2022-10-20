@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 import (
 	"encoding/base64"
@@ -33,45 +33,45 @@ type Field interface {
 	String() (string, error)
 }
 
-type LogField struct {
-	valueType FieldType
+type FieldImpl struct {
+	addr      any
 	key       string
+	str       string
 	i64       int64
 	ui64      uint64
 	f64       float64
-	str       string
-	addr      any
+	valueType FieldType
 }
 
-func (l LogField) Key() string {
+func (l FieldImpl) Key() string {
 	return l.key
 }
 
-func (l LogField) Type() FieldType {
+func (l FieldImpl) Type() FieldType {
 	return l.valueType
 }
 
-func (l LogField) StringValue() string {
+func (l FieldImpl) StringValue() string {
 	return l.str
 }
 
-func (l LogField) Int() int64 {
+func (l FieldImpl) Int() int64 {
 	return l.i64
 }
 
-func (l LogField) UInt() uint64 {
+func (l FieldImpl) UInt() uint64 {
 	return l.ui64
 }
 
-func (l LogField) Float() float64 {
+func (l FieldImpl) Float() float64 {
 	return l.f64
 }
 
-func (l LogField) Addressable() any {
+func (l FieldImpl) Addressable() any {
 	return l.addr
 }
 
-func (l LogField) String() (string, error) {
+func (l FieldImpl) String() (string, error) {
 	var value string
 	switch l.Type() {
 	case TypeInt:
@@ -106,7 +106,7 @@ func (l LogField) String() (string, error) {
 	return value, nil
 }
 
-func (l LogField) Value() (any, error) {
+func (l FieldImpl) Value() (any, error) {
 	switch l.Type() {
 	case TypeInt:
 		return l.Int(), nil
@@ -136,7 +136,7 @@ func (l LogField) Value() (any, error) {
 }
 
 func Int[I int | int8 | int16 | int32 | int64](k string, v I) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeInt,
 		key:       k,
 		i64:       int64(v),
@@ -144,7 +144,7 @@ func Int[I int | int8 | int16 | int32 | int64](k string, v I) Field {
 }
 
 func Uint[U uint | uint8 | uint16 | uint32 | uint64](k string, v U) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeUInt,
 		key:       k,
 		ui64:      uint64(v),
@@ -152,7 +152,7 @@ func Uint[U uint | uint8 | uint16 | uint32 | uint64](k string, v U) Field {
 }
 
 func Float[F float32 | float64](k string, f F) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeFloat,
 		key:       k,
 		f64:       float64(f),
@@ -160,7 +160,7 @@ func Float[F float32 | float64](k string, f F) Field {
 }
 
 func String(k, s string) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeString,
 		key:       k,
 		str:       s,
@@ -168,7 +168,7 @@ func String(k, s string) Field {
 }
 
 func Binary(k string, v []byte) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeBinary,
 		key:       k,
 		addr:      v,
@@ -176,7 +176,7 @@ func Binary(k string, v []byte) Field {
 }
 
 func Array[T any](k string, v []T) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeArray,
 		key:       k,
 		addr:      v,
@@ -184,7 +184,7 @@ func Array[T any](k string, v []T) Field {
 }
 
 func Map[K comparable, V any](k string, v map[K]V) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeMap,
 		key:       k,
 		addr:      v,
@@ -192,7 +192,7 @@ func Map[K comparable, V any](k string, v map[K]V) Field {
 }
 
 func Object(k string, v any) Field {
-	return LogField{
+	return FieldImpl{
 		valueType: TypeAny,
 		key:       k,
 		addr:      v,

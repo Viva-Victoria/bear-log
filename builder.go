@@ -1,4 +1,4 @@
-package bear_log
+package log
 
 import (
 	"bytes"
@@ -10,18 +10,18 @@ var (
 		New: func() any {
 			buf := bytes.NewBuffer(make([]byte, 4096))
 			buf.Reset()
-			return *buf
+			return buf
 		},
 	}
 )
 
 type StringBuilder struct {
-	buffer bytes.Buffer
+	buffer *bytes.Buffer
 }
 
 func NewStringBuilder() StringBuilder {
 	return StringBuilder{
-		buffer: _pool.Get().(bytes.Buffer),
+		buffer: _pool.Get().(*bytes.Buffer),
 	}
 }
 

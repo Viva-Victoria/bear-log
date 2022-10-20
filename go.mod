@@ -1,4 +1,4 @@
-module bear-log
+module github.com/Viva-Victoria/bear-log
 
 go 1.18
 
