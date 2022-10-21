@@ -41,16 +41,18 @@ func formatJsonFields(mapping FieldMapping, fields []Field, builder StringBuilde
 		}
 
 		for i, field := range fields {
-			formatJsonField(field, builder, i, fields)
+			formatJsonField(field, builder, i == len(fields)-1)
 		}
 
 		if len(mapping.FieldsNamespace) > 0 {
-			builder.Append(`},`)
+			builder.Append(`}`)
 		}
 	}
 }
 
-func formatJsonField(field Field, builder StringBuilder, i int, fields []Field) {
+func formatJsonField(field Field, builder StringBuilder, last bool) {
+	builder.Append(`"`, field.Key(), `":`)
+
 	value, err := field.String()
 	if err == nil {
 		if field.Type() == TypeString || field.Type() == TypeBinary {
@@ -58,9 +60,11 @@ func formatJsonField(field Field, builder StringBuilder, i int, fields []Field) 
 		} else {
 			builder.Append(value)
 		}
+	} else {
+		builder.Append(`"%(!`, err.Error(), `)"`)
 	}
 
-	if i < len(fields)-1 {
+	if !last {
 		builder.Append(`,`)
 	}
 }
@@ -70,7 +74,7 @@ func formatJsonTags(mapping FieldMapping, tags []string, builder StringBuilder) 
 		builder.Append(`,"`, mapping.TagsKey, `":[`)
 		for i, tag := range tags {
 			builder.Append(`"`, tag, `"`)
-			if i < len(tags)-1 {
+			if i != len(tags)-1 {
 				builder.Append(`,`)
 			}
 		}

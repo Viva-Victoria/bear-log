@@ -48,5 +48,6 @@ func (s StringBuilder) Bytes() []byte {
 }
 
 func (s StringBuilder) Dispose() {
+	s.buffer.Reset()
 	_pool.Put(s.buffer)
 }
